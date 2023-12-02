@@ -56,16 +56,18 @@ double func2(double y, double w, double alpha, double lambda) {
 
 double NOMA_L1_pr1(double phi, double k, double t, double lambda, double alpha) {
     double ans;
-    ans = pow(tan(phi), alpha + 2.) * pow(tan(k), alpha + 1.) / (1. + pow(1./lambda/PI, alpha / 2.) * pow(log(1./t), alpha / 2.) * cos(k) * cos(k));
+    ans = 1. / (1. + theta * pow(lambda/PI, -alpha / 2.) * pow(log(1./t), alpha / 2.) * cos(k) * cos(k));
     return ans;
 }
 
-double NOMA_L1_pr2(double phi, double k, double tmp) {
-    return tan(phi) / cos(k) / cos(k) - tmp;
+double NOMA_L1_pr2(double phi, double k, double tmp, double lambda, double alpha) {
+    double A = phi / (1. - phi) * exp(k / (1. - k));
+    return (1. - tmp) * pow(A, alpha + 2) / (1. - k) / (1. - k);
 }
 
 double NOMA_L1_pr3(double phi, double tmp, double lambda) {
-    return 2. * PI * lambda * sin(phi) / cos(phi) / cos(phi) * exp(-PI * lambda * tan(phi) * tan(phi)) * exp(-2. * PI * lambda *  tmp);
+    double A = phi / (1. - phi);
+    return 2. * PI * lambda * A * exp(-PI * lambda * pow(A, 2)) * exp(-2. * PI * lambda *  tmp) / (1. - phi) / (1. - phi);
     //return exp(-PI * lambda * tan(phi) * tan(phi)) * exp(-2. * PI * lambda *  tmp);
 }
 
@@ -83,14 +85,14 @@ int main() {
     
     for (lambda = 0; lambda <= 5.0; lambda += 0.1) {
         outputfile << lambda << " ";
-        dphi = PI/ 2. / n; dk = PI / 4. / n; dt = 1. / n;
+        dphi = 1. / n; dk = 1. / n; dt = 1. / n;
         s = 0;
         
         for (double i = 0; i < n-1; i++) {
             double p1 = dphi * i;
             double p2 = dphi * (i+1);
             double tmp2 = 0;
-            for (double j = n-1; j >= 0; j--) {
+            for (double j = 0; j < n-1; j++) {
                 double k1 = dk * j;
                 double k2 = dk * (j+1);
                 double tmp = 0;
@@ -102,13 +104,14 @@ int main() {
                     tmp += (f1 + f2) * dt / 2.0;
                 }
                 //cout << "tmp = " << tmp << endl;
-                double g1 = NOMA_L1_pr2(p1, k1, tmp);
-                double g2 = NOMA_L1_pr2(p2, k2, tmp);
+                double g1 = NOMA_L1_pr2(p1, k1, tmp, lambda, alpha);
+                double g2 = NOMA_L1_pr2(p2, k2, tmp, lambda, alpha);
                 tmp2 += (g1 + g2) * dk / 2.;
             }
             //cout << "tmp2 = " << tmp2 << endl;
             double h1 = NOMA_L1_pr3(p1, tmp2, lambda);
             double h2 = NOMA_L1_pr3(p2, tmp2, lambda);
+            //cout << "h1 = " << h1 << endl;
             s += (h1 + h2) * dphi / 2.;
         }
         cout << lambda << " " << s << endl;
